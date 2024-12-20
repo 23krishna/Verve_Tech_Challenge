@@ -8,8 +8,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class MyVerveProjectApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MyVerveProjectApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(MyVerveProjectApplication.class, args);
+  }
 
 }

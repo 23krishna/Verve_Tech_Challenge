@@ -4,14 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
@@ -28,7 +23,6 @@ public class RequestService {
 
   @Autowired
   private RedisTemplate redisTemplate;
-//  private final RedisTemplate<String, Integer> redisTemplate;
   private final Logger logger = LoggerFactory.getLogger(RequestService.class);
   private final WebClient webClient = WebClient.create();
   private final ExecutorService executor = Executors.newFixedThreadPool(200);
@@ -42,15 +36,11 @@ public class RequestService {
   }
 
   public void processRequest(int id, String endpoint) {
-    // Add to Redis for deduplication
     Boolean isNew = redisTemplate.opsForValue().setIfAbsent(String.valueOf(id), 1, Duration.ofMinutes(1));
     if (isNew) {
       requestMap.put(id, true);
     }
-
     logger.info("Processed request with Id : {}, endpoint: {} into redis", id, endpoint);
-
-    // Handle optional endpoint
     if (endpoint != null) {
       sendHttpPostRequest(endpoint);
     }
@@ -61,7 +51,6 @@ public class RequestService {
     try {
       Map<String, Object> payload = new HashMap<>();
       payload.put("uniqueRequestCount", count);
-
       webClient.post()
           .uri(endpoint)
           .bodyValue(payload)
@@ -77,11 +66,9 @@ public class RequestService {
   public void logAndResetCounts() {
     int uniqueCount = requestMap.size();
     logger.info("Unique request count in last minute: {}", uniqueCount);
-
     String message = "Unique requests in the last minute: " + uniqueCount;
     executor.submit(() -> kafkaTemplate.send(TOPIC, message));
     logger.info("Sent message to Kafka topic {}: {}", TOPIC, message);
-
     requestMap.clear();
   }
 }
